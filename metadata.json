@@ -1,0 +1,5 @@
+{
+  "name": "Generador de Ángulos de Cámara",
+  "description": "Sube una imagen y genera automáticamente múltiples ángulos de cámara y movimientos para obtener una cobertura visual completa de la escena. Ideal para previsualización en fotografía, cine y publicidad.",
+  "requestFramePermissions": []
+}
