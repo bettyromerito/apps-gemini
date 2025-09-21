@@ -4,8 +4,8 @@ import { ImageUploader } from './components/ImageUploader';
 import { ImageGrid } from './components/ImageGrid';
 import { GeneratedImage } from './types';
 import { ALL_TECHNIQUES } from './constants';
-import { generateImageAngle } from './services/geminiService';
 import { SubscriptionModal } from './components/SubscriptionModal';
+// Ya no importamos 'ai' desde 'geminiClient'
 
 const App: React.FC = () => {
   const [originalImage, setOriginalImage] = useState<{ file: File; base64: string } | null>(null);
@@ -69,10 +69,32 @@ const App: React.FC = () => {
 
     try {
         const originalImageBase64 = originalImage.base64.split(',')[1];
-        const mimeType = originalImage.file.type;
 
-        const newMediaUrl = await generateImageAngle(originalImageBase64, mimeType, angleToGenerate.prompt);
-        
+        // Llamada a nuestro intermediario seguro en /api/generate
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            originalImageBase64,
+            mimeType: originalImage.file.type,
+            prompt: angleToGenerate.prompt,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Fallo en la llamada a la API');
+        }
+
+        const data = await response.json();
+        const newMediaUrl = data.newMediaUrl;
+
+        if (!newMediaUrl) {
+            throw new Error("La API no devolvió una imagen.");
+        }
+
         setGeneratedImages(prev => prev.map(img => 
             img.id === angleId ? { ...img, src: newMediaUrl, status: 'success' } : img
         ));
