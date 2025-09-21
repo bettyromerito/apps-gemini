@@ -6,9 +6,10 @@ import { TECHNIQUE_CATEGORIES } from '../constants';
 interface ImageGridProps {
   images: GeneratedImage[];
   onGenerate: (id: string) => void;
+  onRequestDownload: (startDownload: () => void) => void;
 }
 
-export const ImageGrid: React.FC<ImageGridProps> = ({ images, onGenerate }) => {
+export const ImageGrid: React.FC<ImageGridProps> = ({ images, onGenerate, onRequestDownload }) => {
   const getImageState = (id: string) => images.find(img => img.id === id);
 
   return (
@@ -34,6 +35,7 @@ export const ImageGrid: React.FC<ImageGridProps> = ({ images, onGenerate }) => {
                     key={imageState.id} 
                     image={imageState} 
                     onGenerate={onGenerate}
+                    onRequestDownload={onRequestDownload}
                   />
                 );
               })}

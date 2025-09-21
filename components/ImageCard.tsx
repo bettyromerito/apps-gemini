@@ -8,9 +8,10 @@ import { DownloadIcon } from './icons/DownloadIcon';
 interface ImageCardProps {
   image: GeneratedImage;
   onGenerate: (id: string) => void;
+  onRequestDownload: (startDownload: () => void) => void;
 }
 
-export const ImageCard: React.FC<ImageCardProps> = ({ image, onGenerate }) => {
+export const ImageCard: React.FC<ImageCardProps> = ({ image, onGenerate, onRequestDownload }) => {
 
   const handleGenerateClick = () => {
     if (image.status === 'pending' || image.status === 'error') {
@@ -18,18 +19,20 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onGenerate }) => {
     }
   };
 
-  const handleDownload = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
+  const startDownload = () => {
     if (!image.src) return;
-
     const link = document.createElement('a');
     link.href = image.src;
-    // Sanitize title to create a valid filename
     const filename = `${image.title.toLowerCase().replace(/[\s/]/g, '-')}.png`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDownloadClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    onRequestDownload(startDownload);
   };
 
   const renderContent = () => {
@@ -67,7 +70,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onGenerate }) => {
               className="w-full h-full object-cover"
             />
             <button
-              onClick={handleDownload}
+              onClick={handleDownloadClick}
               className="absolute bottom-2 right-2 p-2 rounded-full bg-black/60 text-white/90 opacity-0 group-hover:opacity-100 hover:bg-brand-blue focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-brand-blue transition-all duration-300"
               aria-label={`Descargar ${image.title}`}
               title={`Descargar ${image.title}`}

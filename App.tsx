@@ -5,11 +5,17 @@ import { ImageGrid } from './components/ImageGrid';
 import { GeneratedImage } from './types';
 import { ALL_TECHNIQUES } from './constants';
 import { generateImageAngle } from './services/geminiService';
+import { SubscriptionModal } from './components/SubscriptionModal';
 
 const App: React.FC = () => {
   const [originalImage, setOriginalImage] = useState<{ file: File; base64: string } | null>(null);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [pendingDownload, setPendingDownload] = useState<(() => void) | null>(null);
+
 
   const resetState = () => {
     // Revoke old blob URLs before resetting to prevent memory leaks
@@ -79,6 +85,26 @@ const App: React.FC = () => {
     }
   }, [originalImage]);
 
+  const handleSubscription = (email: string) => {
+    console.log('Subscribed with email:', email); // For demo purposes
+    setIsSubscribed(true);
+    setShowSubscriptionModal(false);
+    
+    if (pendingDownload) {
+      pendingDownload();
+      setPendingDownload(null);
+    }
+  };
+
+  const handleRequestDownload = (startDownload: () => void) => {
+    if (isSubscribed) {
+      startDownload();
+    } else {
+      setPendingDownload(() => startDownload);
+      setShowSubscriptionModal(true);
+    }
+  };
+
   const isProcessing = generatedImages.some(img => img.status === 'generating');
 
   return (
@@ -118,13 +144,25 @@ const App: React.FC = () => {
               </button>
             </div>
             
-            <ImageGrid images={generatedImages} onGenerate={handleGenerateAngle} />
+            <ImageGrid
+              images={generatedImages}
+              onGenerate={handleGenerateAngle}
+              onRequestDownload={handleRequestDownload}
+            />
           </div>
         )}
       </main>
       <footer className="text-center py-6 border-t border-brand-gray-800 mt-12">
         <p className="text-brand-gray-500">Creado con React, Tailwind CSS y Gemini API</p>
       </footer>
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => {
+            setShowSubscriptionModal(false);
+            setPendingDownload(null);
+        }}
+        onSubscribe={handleSubscription}
+      />
     </div>
   );
 };
