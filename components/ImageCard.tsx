@@ -3,6 +3,7 @@ import { GeneratedImage } from '../types';
 import { Spinner } from './Spinner';
 import { ErrorIcon } from './icons/ErrorIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
+import { DownloadIcon } from './icons/DownloadIcon';
 
 interface ImageCardProps {
   image: GeneratedImage;
@@ -15,6 +16,20 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onGenerate }) => {
     if (image.status === 'pending' || image.status === 'error') {
       onGenerate(image.id);
     }
+  };
+
+  const handleDownload = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!image.src) return;
+
+    const link = document.createElement('a');
+    link.href = image.src;
+    // Sanitize title to create a valid filename
+    const filename = `${image.title.toLowerCase().replace(/[\s/]/g, '-')}.png`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const renderContent = () => {
@@ -45,11 +60,21 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onGenerate }) => {
         if (!image.src) return null;
 
         return (
-          <img
-            src={image.src}
-            alt={image.title}
-            className="w-full h-full object-cover"
-          />
+          <div className="relative w-full h-full group">
+            <img
+              src={image.src}
+              alt={image.title}
+              className="w-full h-full object-cover"
+            />
+            <button
+              onClick={handleDownload}
+              className="absolute bottom-2 right-2 p-2 rounded-full bg-black/60 text-white/90 opacity-0 group-hover:opacity-100 hover:bg-brand-blue focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-brand-blue transition-all duration-300"
+              aria-label={`Descargar ${image.title}`}
+              title={`Descargar ${image.title}`}
+            >
+              <DownloadIcon className="w-5 h-5" />
+            </button>
+          </div>
         );
       case 'error':
         return (
