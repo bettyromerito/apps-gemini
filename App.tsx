@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
+import { Modality } from '@google/genai';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
 import { ImageGrid } from './components/ImageGrid';
 import { GeneratedImage } from './types';
 import { ALL_TECHNIQUES } from './constants';
 import { SubscriptionModal } from './components/SubscriptionModal';
-// Ya no importamos 'ai' desde 'geminiClient'
+import { ai } from './services/geminiClient';
 
 const App: React.FC = () => {
   const [originalImage, setOriginalImage] = useState<{ file: File; base64: string } | null>(null);
@@ -69,30 +70,35 @@ const App: React.FC = () => {
 
     try {
         const originalImageBase64 = originalImage.base64.split(',')[1];
-
-        // Llamada a nuestro intermediario seguro en /api/generate
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            originalImageBase64,
-            mimeType: originalImage.file.type,
-            prompt: angleToGenerate.prompt,
-          }),
+        const mimeType = originalImage.file.type;
+        const prompt = angleToGenerate.prompt;
+        
+        // Llamada directa a la API de Gemini desde el cliente
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image-preview',
+            contents: {
+                parts: [
+                    { inlineData: { data: originalImageBase64, mimeType: mimeType } },
+                    { text: prompt },
+                ],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE, Modality.TEXT],
+            },
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Fallo en la llamada a la API');
+        let newMediaUrl: string | null = null;
+        // Extraemos la imagen de la respuesta de Gemini
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            const base64ImageBytes: string = part.inlineData.data;
+            newMediaUrl = `data:image/png;base64,${base64ImageBytes}`;
+            break; // Salimos del bucle una vez encontrada la imagen
+          }
         }
 
-        const data = await response.json();
-        const newMediaUrl = data.newMediaUrl;
-
         if (!newMediaUrl) {
-            throw new Error("La API no devolvió una imagen.");
+            throw new Error("La API de Gemini no devolvió una imagen.");
         }
 
         setGeneratedImages(prev => prev.map(img => 
@@ -101,6 +107,7 @@ const App: React.FC = () => {
 
     } catch (error) {
         console.error(`Fallo al generar el ángulo ${angleId}:`, error);
+        setError(error instanceof Error ? error.message : 'Ocurrió un error desconocido.');
         setGeneratedImages(prev => prev.map(img => 
             img.id === angleId ? { ...img, status: 'error' } : img
         ));

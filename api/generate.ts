@@ -2,22 +2,23 @@
 // Aquí es donde es SEGURO usar tu clave de API.
 import { GoogleGenAI, Modality } from "@google/genai";
 
-// La clave se leerá de una "variable de entorno" que configurarás en tu hosting.
-// NUNCA escribas la clave directamente aquí en un proyecto real.
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  // Esta comprobación es importante.
-  // Si la clave no está configurada en el hosting, la función fallará con un error claro.
-  throw new Error("La variable de entorno API_KEY no está configurada.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
-
 // Esta es la función que se ejecutará cuando tu app llame a "/api/generate"
 // Vercel y Netlify convierten automáticamente este archivo en un endpoint de API.
 export default async function handler(req: Request) {
-  // Solo permitimos peticiones POST
+  // 1. Comprobar la clave de API dentro del manejador para mayor seguridad y fiabilidad
+  const API_KEY = process.env.API_KEY;
+  if (!API_KEY) {
+    console.error("La variable de entorno API_KEY no está configurada.");
+    return new Response(JSON.stringify({ error: 'Error de configuración del servidor: La clave de API no está disponible.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // 2. Inicializar el cliente de la API aquí
+  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  
+  // 3. Proceder con la lógica de la API
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Método no permitido' }), {
       status: 405,
